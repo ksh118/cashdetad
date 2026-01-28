@@ -690,7 +690,7 @@
                         <div class="user-cash">💰 ${u.cash.toLocaleString()}원</div>
                     </div>
                     <div>
-                        <button class="action-btn btn-view" onclick="showUserDetail('${u.id}')">상세보기</button>
+                        <button class="action-btn btn-view" data-user-id="${u.id}" onclick="showUserDetail(this.dataset.userId)">상세보기</button>
                     </div>
                 </div>
             `).join('');
