@@ -512,9 +512,19 @@
                     return;
                 }
 
+                // 모든 사용자 정보 가져오기
+                const userIds = [...new Set(orders.map(o => o.user_id))];
+                const usersResponse = await fetch(`${SUPABASE_URL}/rest/v1/users?id=in.(${userIds.join(',')})`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const users = await usersResponse.json();
+                const userMap = {};
+                users.forEach(u => userMap[u.id] = u.nickname);
+
                 tbody.innerHTML = orders.map(order => {
                     const statusClass = order.status === '구매 승인' ? 'approved' : 
                                       order.status === '준비중' ? 'preparing' : 'completed';
+                    const userNickname = userMap[order.user_id] || '알 수 없음';
                     
                     return `
                         <tr>
@@ -523,7 +533,7 @@
                                 <img src="${order.product_image}" alt="${order.product_name}"><br>
                                 ${order.product_name}
                             </td>
-                            <td>${order.user_id.substring(0, 8)}...</td>
+                            <td>${userNickname}</td>
                             <td>${order.product_price.toLocaleString()}원</td>
                             <td><span class="status-badge status-${statusClass}">${order.status}</span></td>
                             <td>
