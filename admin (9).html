@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 - 캐시뎃</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+        }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #2d3436;
+        }
+        .tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 968px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #2d3436;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 600; color: #2d3436; font-size: 14px; }
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #dfe6e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        .form-input:focus, .form-textarea:focus, .form-select:focus { outline: none; border-color: #667eea; }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-input-label {
+            background: #f1f2f6;
+            color: #2d3436;
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: block;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .file-input-label:hover { background: #dfe6e9; }
+        .file-input { position: absolute; left: -9999px; }
+        .preview-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .list-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+        }
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin-right: 5px;
+        }
+        .btn-delete { background: #ff4757; color: white; }
+        .btn-delete:hover { background: #ff3838; }
+        .btn-toggle { background: #ffa502; color: white; }
+        .btn-toggle:hover { background: #ff9500; }
+        .btn-toggle.active { background: #2ed573; }
+        .btn-confirm { background: #2ed573; color: white; }
+        .btn-confirm:hover { background: #26de81; }
+        .btn-reject { background: #ff6b6b; color: white; }
+        .btn-reject:hover { background: #ee5a52; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #95a5a6; }
+        .empty-icon { font-size: 48px; margin-bottom: 10px; }
+        .pending-item {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .status-pending { background: #ffeaa7; color: #d63031; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 관리자 페이지</h1>
+            <p>미션, 배너, 사용자, 문의 관리</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('missions')">📱 미션 관리</button>
+            <button class="tab-btn" onclick="switchTab('pending')">⏳ 대기중</button>
+            <button class="tab-btn" onclick="switchTab('banners')">🎨 배너 관리</button>
+            <button class="tab-btn" onclick="switchTab('users')">👥 사용자 관리</button>
+            <button class="tab-btn" onclick="switchTab('message')">📨 메시지 전송</button>
+            <button class="tab-btn" onclick="switchTab('attendance')">⚙️ 출석 설정</button>
+        </div>
+
+        <!-- 미션 관리 탭 -->
+        <div class="tab-content active" id="missions">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">➕ 새 미션 등록</div>
+                    <form onsubmit="createMission(event)" id="missionForm">
+                        <div class="form-group">
+                            <label class="form-label">미션 카테고리</label>
+                            <select class="form-select" id="missionCategory" required>
+                                <option value="10sec">10초 시청형</option>
+                                <option value="quiz">퀴즈형</option>
+                                <option value="install">앱 설치형</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">미션 제목</label>
+                            <input type="text" class="form-input" id="missionTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">미션 설명</label>
+                            <input type="text" class="form-input" id="missionDescription" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">보상 금액 (원)</label>
+                            <input type="number" class="form-input" id="missionReward" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">링크 URL</label>
+                            <input type="url" class="form-input" id="missionLink" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">배너 이미지</label>
+                            <div class="file-input-wrapper">
+                                <label class="file-input-label" for="missionBanner">📁 이미지 선택</label>
+                                <input type="file" class="file-input" id="missionBanner" accept="image/*" onchange="previewImage(event, 'missionPreview')" required>
+                            </div>
+                            <img id="missionPreview" class="preview-image" style="display:none;">
+                        </div>
+                        <button type="submit" class="submit-btn">미션 등록</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📋 등록된 미션</div>
+                    <div id="missionsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 대기중 탭 -->
+        <div class="tab-content" id="pending">
+            <div class="card">
+                <div class="card-title">⏳ 대기중인 미션</div>
+                <div id="pendingList"></div>
+            </div>
+        </div>
+
+        <!-- 배너 관리 탭 -->
+        <div class="tab-content" id="banners">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">➕ 새 배너 등록</div>
+                    <form onsubmit="createBanner(event)" id="bannerForm">
+                        <div class="form-group">
+                            <label class="form-label">배너 이미지</label>
+                            <div class="file-input-wrapper">
+                                <label class="file-input-label" for="bannerImage">📁 이미지 선택</label>
+                                <input type="file" class="file-input" id="bannerImage" accept="image/*" onchange="previewImage(event, 'bannerPreview')" required>
+                            </div>
+                            <img id="bannerPreview" class="preview-image" style="display:none;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">링크 URL (선택)</label>
+                            <input type="url" class="form-input" id="bannerLink">
+                        </div>
+                        <button type="submit" class="submit-btn">배너 등록</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🎨 등록된 배너</div>
+                    <div id="bannersList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 사용자 관리 탭 -->
+        <div class="tab-content" id="users">
+            <div class="card">
+                <div class="card-title">👥 사용자 목록</div>
+                <div id="usersList"></div>
+            </div>
+        </div>
+
+        <!-- 메시지 전송 탭 -->
+        <div class="tab-content" id="message">
+            <div class="card">
+                <div class="card-title">📨 특정 사용자에게 메시지 전송</div>
+                <form onsubmit="sendUserMessage(event)" id="messageForm">
+                    <div class="form-group">
+                        <label class="form-label">받는 사람</label>
+                        <select class="form-select" id="messageUserId" required>
+                            <option value="">사용자 선택</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">제목</label>
+                        <input type="text" class="form-input" id="messageTitle" required placeholder="예: 올바르지 않은 방법으로 캐시 획득">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">내용</label>
+                        <textarea class="form-textarea" id="messageContent" rows="5" required placeholder="메시지 내용을 입력하세요"></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">메시지 전송</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 출석 설정 탭 -->
+        <div class="tab-content" id="attendance">
+            <div class="card">
+                <div class="card-title">⚙️ 출석 보상 설정</div>
+                <form onsubmit="updateAttendanceReward(event)">
+                    <div class="form-group">
+                        <label class="form-label">일일 출석 보상 (원)</label>
+                        <input type="number" class="form-input" id="attendanceReward" required>
+                    </div>
+                    <button type="submit" class="submit-btn">설정 저장</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://apuiydnqimlmeqpftijl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwdWl5ZG5xaW1sbWVxcGZ0aWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1MTgzMDAsImV4cCI6MjA4NTA5NDMwMH0.G7CvTQLEsIzkhJfsa67ou28Pbt8J5bkbEvyEgSRziXI';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMissions();
+            loadBanners();
+            loadUsers();
+            loadAttendanceSettings();
+            loadUsersForMessage();
+        });
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'pending') {
+                loadPendingMissions();
+            }
+        }
+
+        function previewImage(event, previewId) {
+            const file = event.target.files[0];
+            const preview = document.getElementById(previewId);
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function createMission(event) {
+            event.preventDefault();
+            
+            const category = document.getElementById('missionCategory').value;
+            const title = document.getElementById('missionTitle').value;
+            const description = document.getElementById('missionDescription').value;
+            const reward = parseInt(document.getElementById('missionReward').value);
+            const link = document.getElementById('missionLink').value;
+            const bannerFile = document.getElementById('missionBanner').files[0];
+
+            console.log('미션 등록 시작:', { category, title, description, reward, link });
+
+            if (!bannerFile) {
+                alert('배너 이미지를 선택해주세요.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const bannerUrl = e.target.result;
+
+                const missionData = {
+                    title: title,
+                    description: description,
+                    cash_reward: reward,
+                    link: link,
+                    banner_url: bannerUrl,
+                    is_active: true,
+                    category: category
+                };
+
+                console.log('전송할 데이터:', missionData);
+
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/missions`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify(missionData)
+                    });
+
+                    console.log('응답 상태:', response.status);
+                    const responseData = await response.json();
+                    console.log('응답 데이터:', responseData);
+
+                    if (!response.ok) {
+                        throw new Error(`등록 실패: ${JSON.stringify(responseData)}`);
+                    }
+
+                    alert('미션이 등록되었습니다.');
+                    document.getElementById('missionForm').reset();
+                    document.getElementById('missionPreview').style.display = 'none';
+                    await loadMissions();
+                } catch (error) {
+                    console.error('미션 등록 오류:', error);
+                    alert(`미션 등록 중 오류가 발생했습니다: ${error.message}`);
+                }
+            };
+
+            reader.onerror = (error) => {
+                console.error('파일 읽기 오류:', error);
+                alert('이미지 파일을 읽을 수 없습니다.');
+            };
+
+            reader.readAsDataURL(bannerFile);
+        }
+
+        async function loadMissions() {
+            try {
+                console.log('미션 로드 시작...');
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/missions?order=created_at.desc`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                
+                console.log('미션 로드 응답 상태:', response.status);
+                const missions = await response.json();
+                console.log('로드된 미션 수:', missions.length);
+                console.log('미션 데이터:', missions);
+                
+                const list = document.getElementById('missionsList');
+                
+                if (missions.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div>등록된 미션이 없습니다</div></div>';
+                    return;
+                }
+
+                list.innerHTML = missions.map(mission => {
+                    const categoryText = mission.category === '10sec' ? '10초 시청형' : 
+                                       mission.category === 'quiz' ? '퀴즈형' : '앱 설치형';
+                    return `
+                    <div class="list-item">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <img src="${mission.banner_url}" style="width: 80px; height: 80px; border-radius: 10px; object-fit: cover;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 700; font-size: 16px; margin-bottom: 5px;">${mission.title}</div>
+                                <div style="color: #95a5a6; font-size: 14px; margin-bottom: 5px;">${mission.description}</div>
+                                <div style="color: #667eea; font-weight: 600;">💰 ${mission.cash_reward.toLocaleString()}원</div>
+                                <div style="color: #e17055; font-weight: 600; font-size: 12px; margin-top: 5px;">📂 ${categoryText}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="action-btn btn-toggle ${mission.is_active ? 'active' : ''}" onclick="toggleMission('${mission.id}', ${!mission.is_active})">
+                                ${mission.is_active ? '활성화' : '비활성화'}
+                            </button>
+                            <button class="action-btn btn-delete" onclick="deleteMission('${mission.id}')">삭제</button>
+                        </div>
+                    </div>
+                `}).join('');
+            } catch (error) {
+                console.error('미션 로드 오류:', error);
+                document.getElementById('missionsList').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div>미션을 불러올 수 없습니다</div></div>';
+            }
+        }
+
+        async function toggleMission(missionId, newStatus) {
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/missions?id=eq.${missionId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ is_active: newStatus })
+                });
+                await loadMissions();
+            } catch (error) {
+                console.error('미션 토글 오류:', error);
+            }
+        }
+
+        async function deleteMission(missionId) {
+            if (!confirm('정말 이 미션을 삭제하시겠습니까?')) return;
+            
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/missions?id=eq.${missionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Prefer': 'return=minimal'
+                    }
+                });
+                await loadMissions();
+            } catch (error) {
+                console.error('미션 삭제 오류:', error);
+            }
+        }
+
+        async function loadPendingMissions() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/user_missions?status=eq.pending&order=completed_at.desc`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const pending = await response.json();
+
+                const list = document.getElementById('pendingList');
+
+                if (pending.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div>대기중인 미션이 없습니다</div></div>';
+                    return;
+                }
+
+                const userIds = [...new Set(pending.map(p => p.user_id))];
+                const missionIds = [...new Set(pending.map(p => p.mission_id))];
+
+                const usersResponse = await fetch(`${SUPABASE_URL}/rest/v1/users?id=in.(${userIds.join(',')})`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const users = await usersResponse.json();
+
+                const missionsResponse = await fetch(`${SUPABASE_URL}/rest/v1/missions?id=in.(${missionIds.join(',')})`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const missions = await missionsResponse.json();
+
+                list.innerHTML = pending.map(p => {
+                    const user = users.find(u => u.id === p.user_id);
+                    const mission = missions.find(m => m.id === p.mission_id);
+                    const categoryText = mission?.category === 'quiz' ? '퀴즈' : '설치';
+
+                    return `
+                    <div class="list-item pending-item">
+                        <div style="font-weight: 700; font-size: 16px; margin-bottom: 10px;">
+                            ${user ? user.nickname : '알 수 없음'} - ${mission ? mission.title : '미션 정보 없음'}
+                            <span class="status-badge status-pending">대기중</span>
+                        </div>
+                        <div style="color: #95a5a6; font-size: 14px; margin-bottom: 10px;">
+                            📂 카테고리: ${categoryText} | 💰 보상: ${p.cash_earned.toLocaleString()}원
+                        </div>
+                        <div style="color: #95a5a6; font-size: 12px; margin-bottom: 15px;">
+                            ⏰ ${new Date(p.completed_at).toLocaleString('ko-KR')}
+                        </div>
+                        <div>
+                            <button class="action-btn btn-confirm" onclick="confirmMission('${p.id}', '${p.user_id}', ${p.cash_earned})">확인</button>
+                            <button class="action-btn btn-reject" onclick="rejectMission('${p.id}', '${p.user_id}')">거절</button>
+                        </div>
+                    </div>
+                `}).join('');
+            } catch (error) {
+                console.error('대기중 미션 로드 오류:', error);
+            }
+        }
+
+        async function confirmMission(userMissionId, userId, cashEarned) {
+            if (!confirm('이 미션을 확인하여 완료 처리하시겠습니까?')) return;
+
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/user_missions?id=eq.${userMissionId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ status: 'completed' })
+                });
+
+                const userResponse = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const users = await userResponse.json();
+                const user = users[0];
+
+                await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ cash: user.cash + cashEarned })
+                });
+
+                alert('미션이 확인되어 완료 처리되었습니다.');
+                await loadPendingMissions();
+            } catch (error) {
+                console.error('미션 확인 오류:', error);
+                alert('미션 확인 중 오류가 발생했습니다.');
+            }
+        }
+
+        async function rejectMission(userMissionId, userId) {
+            if (!confirm('정말 이 미션을 거절하시겠습니까?')) return;
+
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/user_missions?id=eq.${userMissionId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ status: 'rejected' })
+                });
+
+                alert('미션이 거절되었습니다.');
+                await loadPendingMissions();
+            } catch (error) {
+                console.error('미션 거절 오류:', error);
+            }
+        }
+
+        async function createBanner(event) {
+            event.preventDefault();
+            
+            const bannerFile = document.getElementById('bannerImage').files[0];
+            const link = document.getElementById('bannerLink').value;
+
+            if (!bannerFile) {
+                alert('배너 이미지를 선택해주세요.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const imageUrl = e.target.result;
+
+                try {
+                    await fetch(`${SUPABASE_URL}/rest/v1/banners`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            image_url: imageUrl,
+                            link: link || null,
+                            is_active: true
+                        })
+                    });
+
+                    alert('배너가 등록되었습니다.');
+                    document.getElementById('bannerForm').reset();
+                    document.getElementById('bannerPreview').style.display = 'none';
+                    await loadBanners();
+                } catch (error) {
+                    console.error('배너 등록 오류:', error);
+                    alert('배너 등록 중 오류가 발생했습니다.');
+                }
+            };
+            reader.readAsDataURL(bannerFile);
+        }
+
+        async function loadBanners() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/banners?order=created_at.desc`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const banners = await response.json();
+                
+                const list = document.getElementById('bannersList');
+                
+                if (banners.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🎨</div><div>등록된 배너가 없습니다</div></div>';
+                    return;
+                }
+
+                list.innerHTML = banners.map(banner => `
+                    <div class="list-item">
+                        <img src="${banner.image_url}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 10px;">
+                        <div style="margin-bottom: 10px;">
+                            <a href="${banner.link || '#'}" target="_blank" style="color: #667eea; text-decoration: none;">
+                                ${banner.link ? '🔗 ' + banner.link : '링크 없음'}
+                            </a>
+                        </div>
+                        <div>
+                            <button class="action-btn btn-toggle ${banner.is_active ? 'active' : ''}" onclick="toggleBanner('${banner.id}', ${!banner.is_active})">
+                                ${banner.is_active ? '활성화' : '비활성화'}
+                            </button>
+                            <button class="action-btn btn-delete" onclick="deleteBanner('${banner.id}')">삭제</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('배너 로드 오류:', error);
+            }
+        }
+
+        async function toggleBanner(bannerId, newStatus) {
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/banners?id=eq.${bannerId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ is_active: newStatus })
+                });
+                await loadBanners();
+            } catch (error) {
+                console.error('배너 토글 오류:', error);
+            }
+        }
+
+        async function deleteBanner(bannerId) {
+            if (!confirm('정말 이 배너를 삭제하시겠습니까?')) return;
+            
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/banners?id=eq.${bannerId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Prefer': 'return=minimal'
+                    }
+                });
+                await loadBanners();
+            } catch (error) {
+                console.error('배너 삭제 오류:', error);
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/users?order=created_at.desc`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const users = await response.json();
+                const list = document.getElementById('usersList');
+                
+                if (users.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><div>사용자가 없습니다</div></div>';
+                    return;
+                }
+                
+                list.innerHTML = users.map(u => `
+                    <div class="list-item">
+                        <div style="font-weight: 700; margin-bottom: 5px;">${u.nickname}</div>
+                        <div style="color: #95a5a6; font-size: 14px; margin-bottom: 5px;">${u.email}</div>
+                        <div style="color: #667eea; font-weight: 600;">💰 ${u.cash.toLocaleString()}원</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('사용자 로드 오류:', error);
+            }
+        }
+
+        async function loadUsersForMessage() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/users?order=nickname.asc`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const users = await response.json();
+                const select = document.getElementById('messageUserId');
+                
+                select.innerHTML = '<option value="">사용자 선택</option>' + 
+                    users.map(u => `<option value="${u.id}">${u.nickname} (${u.email})</option>`).join('');
+            } catch (error) {
+                console.error('사용자 목록 로드 오류:', error);
+            }
+        }
+
+        async function sendUserMessage(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('messageUserId').value;
+            const title = document.getElementById('messageTitle').value;
+            const content = document.getElementById('messageContent').value;
+
+            if (!userId) {
+                alert('사용자를 선택해주세요.');
+                return;
+            }
+
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/admin_messages`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        title: title,
+                        content: content,
+                        is_read: false
+                    })
+                });
+
+                alert('메시지가 전송되었습니다.');
+                document.getElementById('messageForm').reset();
+            } catch (error) {
+                console.error('메시지 전송 오류:', error);
+                alert('메시지 전송 중 오류가 발생했습니다.');
+            }
+        }
+
+        async function loadAttendanceSettings() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?limit=1`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const settings = await response.json();
+                if (settings.length > 0) {
+                    document.getElementById('attendanceReward').value = settings[0].reward_amount;
+                }
+            } catch (error) {
+                console.error('출석 설정 로드 오류:', error);
+            }
+        }
+
+        async function updateAttendanceReward(event) {
+            event.preventDefault();
+            const rewardAmount = parseInt(document.getElementById('attendanceReward').value);
+            
+            try {
+                const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?limit=1`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const existing = await checkResponse.json();
+
+                if (existing.length > 0) {
+                    await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?id=eq.${existing[0].id}`, {
+                        method: 'PATCH',
+                        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+                        body: JSON.stringify({ reward_amount: rewardAmount })
+                    });
+                } else {
+                    await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings`, {
+                        method: 'POST',
+                        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+                        body: JSON.stringify({ reward_amount: rewardAmount })
+                    });
+                }
+
+                alert('출석 보상이 설정되었습니다.');
+            } catch (error) {
+                console.error('출석 설정 저장 오류:', error);
+                alert('출석 설정 저장 중 오류가 발생했습니다.');
+            }
+        }
+    </script>
+</body>
+</html>
